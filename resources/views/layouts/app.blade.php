@@ -15,7 +15,12 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @if(app()->environment('production'))
+            <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+        @else
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @endif
+        
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
