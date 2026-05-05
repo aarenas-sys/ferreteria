@@ -17,6 +17,18 @@ class CheckSessionTimeout
     private const INACTIVITY_TIMEOUT = 2;
 
     /**
+     * Rutas públicas que NO deben ser afectadas por este middleware
+     */
+    private const PUBLIC_ROUTES = [
+        '/',
+        '/login',
+        '/register',
+        '/forgot-password',
+        '/reset-password',
+        '/email/verify',
+    ];
+
+    /**
      * Rutas que NO deben actualizar last_activity
      */
     private const EXCLUDED_PATHS = [
@@ -41,24 +53,33 @@ class CheckSessionTimeout
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Permitir logout sin verificación de timeout
-        if ($request->getPathInfo() === '/logout' || $request->getPathInfo() === '/session/ping') {
+        // 1. Solo se aplica a usuarios autenticados
+        if (!Auth::check()) {
             return $next($request);
         }
 
-        // Solo verificar para usuarios autenticados
+        // 2. Omitir rutas públicas completamente
+        if ($this->isPublicRoute($request->getPathInfo())) {
+            return $next($request);
+        }
+
+        // 3. Permitir logout sin verificación
+        $path = $request->getPathInfo();
+        if ($path === '/logout') {
+            return $next($request);
+        }
+
+        // 4. Verificación de timeout para usuarios autenticados en rutas protegidas
         if (Auth::check()) {
             $lastActivityKey = 'last_activity';
             $lastActivity = Session::get($lastActivityKey);
             $currentTime = time();
-            $path = $request->getPathInfo();
+            $timeoutInSeconds = self::INACTIVITY_TIMEOUT * 60;
 
-            // Verificar timeout primero (antes de actualizar actividad)
-            if ($lastActivity) {
-                $timeoutInSeconds = self::INACTIVITY_TIMEOUT * 60;
+            // Verificar si la sesión ha expirado por inactividad
+            if ($lastActivity !== null) {
                 $elapsedTime = $currentTime - $lastActivity;
 
-                // Si pasó el tiempo de inactividad, cerrar sesión
                 if ($elapsedTime > $timeoutInSeconds) {
                     Log::info('Session timeout - User logout', [
                         'user_id' => Auth::id(),
@@ -71,13 +92,18 @@ class CheckSessionTimeout
                     Session::invalidate();
                     Session::regenerateToken();
 
+                    // Si es una solicitud AJAX/fetch, retornar JSON con 401
+                    if ($request->expectsJson()) {
+                        return response()->json(['message' => 'Session expired'], 401);
+                    }
+
                     return redirect('/login')
                         ->with('warning', 'Tu sesión expiró por inactividad. Por favor, vuelve a iniciar sesión.');
                 }
             }
 
-            // Actualizar last_activity SOLO en rutas "reales" (no assets ni favicons)
-            if (!$this->isExcludedPath($path)) {
+            // Actualizar last_activity SOLO en rutas reales (no en assets) e ignorar /session/ping
+            if (!$this->isExcludedPath($path) && $path !== '/session/ping') {
                 Session::put($lastActivityKey, $currentTime);
                 Log::debug('Session activity updated', [
                     'user_id' => Auth::id(),
@@ -88,6 +114,25 @@ class CheckSessionTimeout
         }
 
         return $next($request);
+    }
+
+    /**
+     * Verificar si la ruta es pública (no requiere autenticación)
+     * Las rutas públicas no deben pasar por validación de timeout
+     */
+    private function isPublicRoute(string $path): bool
+    {
+        // Comparar ruta exacta primero
+        foreach (self::PUBLIC_ROUTES as $publicRoute) {
+            if ($path === $publicRoute) {
+                return true;
+            }
+            // Comparar prefijos para rutas como /forgot-password/...
+            if ($publicRoute !== '/' && str_starts_with($path, $publicRoute . '/')) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -42,9 +42,9 @@ class StoreProductoRequest extends FormRequest
     {
         return [
             'nombre.required' => 'El nombre del producto es obligatorio.',
-            'nombre.unique' => 'Ya existe un producto con ese nombre.',
+            'nombre.unique' => 'Este nombre ya existe. Por favor elige otro nombre.',
             'codigo.required' => 'El código del producto es obligatorio.',
-            'codigo.unique' => 'Ya existe un producto con ese código.',
+            'codigo.unique' => 'Este código ya existe. Por favor elige otro código.',
             'precio.required' => 'El precio es obligatorio.',
             'precio.numeric' => 'El precio debe ser un valor numérico.',
             'stock.required' => 'El stock es obligatorio.',

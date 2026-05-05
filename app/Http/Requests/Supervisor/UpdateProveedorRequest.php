@@ -24,7 +24,12 @@ class UpdateProveedorRequest extends FormRequest
                 'max:20',
                 Rule::unique('proveedores', 'nit')->ignore($proveedorId),
             ],
-            'telefono' => ['required', 'string', 'max:20'],
+            'telefono' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('proveedores', 'telefono')->ignore($proveedorId),
+            ],
             'email' => [
                 'required',
                 'string',
@@ -44,6 +49,7 @@ class UpdateProveedorRequest extends FormRequest
             'nit.required' => 'El NIT es obligatorio.',
             'nit.unique' => 'Ya existe un proveedor con este NIT.',
             'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.unique' => 'Ya existe un proveedor con este teléfono.',
             'email.required' => 'El email es obligatorio.',
             'email.email' => 'El email debe tener un formato válido.',
             'email.unique' => 'Ya existe un proveedor con este email.',

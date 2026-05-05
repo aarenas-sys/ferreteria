@@ -17,7 +17,7 @@ class StoreProveedorRequest extends FormRequest
         return [
             'nombre' => ['required', 'string', 'max:255'],
             'nit' => ['required', 'string', 'max:20', Rule::unique('proveedores', 'nit')],
-            'telefono' => ['required', 'string', 'max:20'],
+            'telefono' => ['required', 'string', 'max:20', Rule::unique('proveedores', 'telefono')],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('proveedores', 'email')],
             'direccion' => ['nullable', 'string', 'max:500'],
             'activo' => ['boolean'],
@@ -31,6 +31,7 @@ class StoreProveedorRequest extends FormRequest
             'nit.required' => 'El NIT es obligatorio.',
             'nit.unique' => 'Ya existe un proveedor con este NIT.',
             'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.unique' => 'Ya existe un proveedor con este teléfono.',
             'email.required' => 'El email es obligatorio.',
             'email.email' => 'El email debe tener un formato válido.',
             'email.unique' => 'Ya existe un proveedor con este email.',

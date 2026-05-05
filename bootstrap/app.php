@@ -22,5 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Mostrar página 419 personalizada cuando el token CSRF no sea válido
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e) {
+            return view('errors.419');
+        });
     })->create();

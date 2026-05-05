@@ -1,5 +1,4 @@
 import './bootstrap';
-import './session-timeout';
 
 import Alpine from 'alpinejs';
 

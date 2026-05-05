@@ -293,6 +293,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
                 body: JSON.stringify({
@@ -302,8 +303,21 @@
             })
             .then(response => {
                 if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.message || 'Error al crear categoría');
+                    return response.text().then(text => {
+                        try {
+                            const data = JSON.parse(text);
+                            // Si hay errores de validación, mostrar el primero
+                            if (data.errors) {
+                                const firstError = Object.values(data.errors)[0];
+                                throw new Error(Array.isArray(firstError) ? firstError[0] : firstError);
+                            }
+                            throw new Error(data.message || 'Error al crear categoría');
+                        } catch (e) {
+                            if (e instanceof SyntaxError) {
+                                throw new Error('Error al crear: respuesta inválida del servidor');
+                            }
+                            throw e;
+                        }
                     });
                 }
                 return response.json();
@@ -449,13 +463,11 @@
             document.getElementById('editCategoriaModal').classList.add('hidden');
         }
 
-        // Actualizar categoría via AJAX
-        document.addEventListener('submit', function(e) {
-            if (e.target.id !== 'editCategoriaForm') return;
-            
-            e.preventDefault();
+        // Actualizar categoría via AJAX - FUNCIÓN EXPLÍCITA
+        function submitEditCategoriaForm(event) {
+            event.preventDefault();
 
-            const form = e.target;
+            const form = document.getElementById('editCategoriaForm');
             const id = document.getElementById('editCategoriaId').value;
             const nombre = document.getElementById('editNombreCategoria').value;
             const descripcion = document.getElementById('editDescripcionCategoria').value;
@@ -473,6 +485,7 @@
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
                 body: JSON.stringify({
@@ -481,9 +494,23 @@
                 })
             })
             .then(response => {
+                // Si la respuesta no es OK, intentar parsear como JSON
                 if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.message || 'Error al actualizar categoría');
+                    return response.text().then(text => {
+                        try {
+                            const data = JSON.parse(text);
+                            // Si hay errores de validación, mostrar el primero
+                            if (data.errors) {
+                                const firstError = Object.values(data.errors)[0];
+                                throw new Error(Array.isArray(firstError) ? firstError[0] : firstError);
+                            }
+                            throw new Error(data.message || 'Error al actualizar categoría');
+                        } catch (e) {
+                            if (e instanceof SyntaxError) {
+                                throw new Error('Error al actualizar: respuesta inválida del servidor');
+                            }
+                            throw e;
+                        }
                     });
                 }
                 return response.json();
@@ -502,6 +529,12 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Actualizar categoría';
             });
+        }
+
+        // Actualizar categoría via AJAX - Event listener (respaldo)
+        document.addEventListener('submit', function(e) {
+            if (e.target.id !== 'editCategoriaForm') return;
+            submitEditCategoriaForm(e);
         });
 
         // Eliminar categoría
@@ -513,10 +546,27 @@
             fetch(`{{ route('supervisor.categorias.destroy', ['categoria' => 'ID']) }}`.replace('ID', id), {
                 method: 'DELETE',
                 headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        try {
+                            const data = JSON.parse(text);
+                            throw new Error(data.message || 'Error al eliminar categoría');
+                        } catch (e) {
+                            if (e instanceof SyntaxError) {
+                                throw new Error('Error al eliminar: respuesta inválida del servidor');
+                            }
+                            throw e;
+                        }
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showSuccessMessage(data.message);
@@ -528,7 +578,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showErrorMessage('Error al eliminar categoría');
+                showErrorMessage(error.message || 'Error al eliminar categoría');
             });
         }
 
@@ -675,7 +725,7 @@
                     </button>
                 </div>
 
-                <form id="editCategoriaForm" class="space-y-4 mt-4">
+                <form id="editCategoriaForm" class="space-y-4 mt-4" onsubmit="submitEditCategoriaForm(event)">
                     <input type="hidden" id="editCategoriaId">
 
                     <div>

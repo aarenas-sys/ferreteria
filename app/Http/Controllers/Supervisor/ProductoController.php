@@ -92,6 +92,7 @@ class ProductoController extends Controller
     {
         $this->authorizeBranch($producto);
 
+        $producto->load('categoria');
         $categorias = Categoria::ordenadas()->get();
         return view('supervisor.productos.edit', compact('producto', 'categorias'));
     }

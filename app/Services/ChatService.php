@@ -273,11 +273,11 @@ class ChatService
         if ($stock > 0) {
             // Agregar alerta de stock bajo si es necesario
             $alerta = $stock <= 20 ? " ⚠️ *Stock bajo, se recomienda comprar pronto*" : "";
-            return "✅ Tenemos **{$stock} unidades** de **{$productoModelo->nombre}** en la sucursal **{$nombreSucursal}**{$alerta}.";
+            return "✅ Tenemos **{$stock} unidades** de **{$productoModelo->nombre}** en la  **{$nombreSucursal}**{$alerta}.";
         } else {
             // Si está agotado, sugerir alternativas
             $alternativas = $this->obtenerProductosRelacionados($productoModelo->nombre, $branchId, 3);
-            $respuesta = "❌ Lo sentimos, **{$productoModelo->nombre}** está agotado en la sucursal **{$nombreSucursal}**.";
+            $respuesta = "❌ Lo sentimos, **{$productoModelo->nombre}** está agotado en la **{$nombreSucursal}**.";
             
             if (!$alternativas->isEmpty()) {
                 $respuesta .= "\n\n💡 Alternativas disponibles:\n";
